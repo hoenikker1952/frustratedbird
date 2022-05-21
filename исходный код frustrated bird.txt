@@ -1,0 +1,344 @@
+Frustratedbird.java
+package com.mygdx.game;
+
+import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.utils.ScreenUtils;
+
+import stat.GameStateManager;
+import stat.Menu;
+
+public class Frustratedbird extends ApplicationAdapter {
+	public static final int WIDTH = 480;
+	public static final int HEIGHT = 800;
+
+
+	public static final String TITLE = "frustrated bird";
+
+	private GameStateManager gsm;
+	private SpriteBatch batch;
+
+
+	@Override
+	public void create () {
+		batch = new SpriteBatch();
+		gsm = new GameStateManager();
+		ScreenUtils.clear(1, 0, 0, 1);
+		gsm.push(new Menu(gsm));
+	}
+
+	@Override
+	public void render () {
+		gsm.update(Gdx.graphics.getDeltaTime());
+		gsm.render(batch);
+	}
+
+}
+Fbird.java
+package cpreyt;
+
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector3;
+
+public class Fbird {
+    private static final int MOVE = 100;
+    private static final int GRAV = -14;
+    private Vector3 posit;
+    private Vector3 velos;
+    private Rectangle bbird;
+
+    private Texture bird;
+
+    public Fbird(int x, int y){
+        posit = new Vector3();
+        velos = new Vector3();
+        bird = new Texture("bird.png");
+        bbird = new Rectangle(x, y, bird.getWidth(), bird.getHeight());
+    }
+
+    public Vector3 getPosit() {
+        return posit;
+    }
+
+    public Texture getBird() {
+        return bird;
+    }
+
+    public void update(float dt){
+        if (posit.y>0)
+            velos.add(0, GRAV, 0);
+        velos.scl(dt);
+        posit.add(MOVE*dt, velos.y, 0);
+        if (posit.y<0)
+            posit.y=0;
+
+        velos.scl(1/dt);
+        bbird.setPosition(posit.x, posit.y);
+
+    }
+    public void pryg(){
+
+        velos.y=240;
+    }
+    public Rectangle getBbird(){
+        return bbird;
+    }
+
+}
+Truba.java
+package cpreyt;
+
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g3d.particles.influencers.ColorInfluencer;
+import com.badlogic.gdx.graphics.g3d.particles.influencers.ParticleControllerInfluencer;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
+
+public class Truba {
+
+    public static final int FLUCT=130;
+    public static final int TUBE =100;
+    public static final int LOWOPEN=120;
+    public static final int TRUBAWID=52;
+
+    private Texture verh, niz;
+    private Vector2 posverh, posniz;
+    private ParticleControllerInfluencer.Random ran;
+    private Rectangle bverh, bniz;
+
+    public Texture getVerh () {
+        return verh;
+    }
+
+    public Texture getNiz () {
+        return niz;
+    }
+
+    public Vector2 getPosverh () {
+        return posverh;
+    }
+
+    public Vector2 getPosniz () {
+        return posniz;
+    }
+
+    public Truba(float x) {
+        verh = new Texture("vverh.png");
+        niz = new Texture("niz.png");
+        ran = new ParticleControllerInfluencer.Random();
+        posverh = new Vector2(x, ran.nextInt(FLUCT) + TUBE + LOWOPEN);
+        posniz = new Vector2(x, posverh.y - TUBE - niz.getHeight());
+
+        bverh = new Rectangle(posverh.x, posverh.y, verh.getWidth(), verh.getHeight());
+        bniz = new Rectangle(posniz.x, posniz.y, niz.getWidth(), niz.getHeight());
+
+    }
+    public void reposition(float x){
+        posverh.set(x, ran.nextInt(FLUCT) + TUBE + LOWOPEN);
+        posniz.set(x, posverh.y - TUBE - niz.getHeight());
+        bverh.setPosition(posverh.x,posverh.y);
+        bniz.setPosition(posniz.x,posniz.y);
+
+    }
+
+    public boolean collides(Rectangle player){
+        return player.overlaps(bverh) || player.overlaps(bniz);
+
+    }
+
+}
+
+GameStateManager.java
+package stat;
+
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.scenes.scene2d.ui.Stack;
+
+public class GameStateManager {
+
+    private Stack<State> states;
+
+    public GameStateManager() {
+        states = new Stack<State>();
+    }
+
+    public void push(State state) {
+        states.push(state);
+    }
+
+    public void pop() {
+        states.pop().dispose();
+    }
+
+    public void set(State state) {
+        states.pop().dispose();
+        states.push(state);
+    }
+
+    public void update(float dt) {
+        states.peek().update(dt);
+    }
+
+    public void render(SpriteBatch sb) {
+        states.peek().render(sb);
+    }
+}
+
+State.java
+package stat;
+
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector3;
+
+public abstract class State {
+    protected OrthographicCamera camera;
+    protected Vector3 vector;
+    protected GameStateManager gsm;
+
+    public State(GameStateManager gsm){
+        this.gsm = gsm;
+        vector = new Vector3();
+        camera = new OrthographicCamera();
+    }
+
+    protected abstract void handleInput();
+    public abstract void update(float dt);
+    public abstract void render(SpriteBatch sb);
+    public abstract void dispose();
+}
+
+Menu.java
+package stat;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.mygdx.game.Frustratedbird;
+
+public class Menu extends State {
+
+    private Texture background;
+    private Texture button;
+    public Menu(GameStateManager gsm) {
+        super(gsm);
+        background = new Texture("background.png");
+        button = new Texture("play.png");
+    }
+
+    @java.lang.Override
+    protected void handleInput() {
+        if(Gdx.input.justTouched()){
+            gsm.set(new Play(gsm));
+        }
+
+    }
+
+    @java.lang.Override
+    public void update(float dt) {
+        handleInput();
+
+    }
+
+    @java.lang.Override
+    public void render(SpriteBatch sb) {
+        sb.begin();
+        sb.draw(background, 0, 0, Frustratedbird.WIDTH, Frustratedbird.HEIGHT);
+        sb.draw(button, (Frustratedbird.WIDTH/2)-(button.getWidth()/2), Frustratedbird.HEIGHT/2);
+        sb.end();
+
+    }
+
+    @java.lang.Override
+    public void dispose() {
+        background.dispose();
+        button.dispose();
+
+    }
+}
+Play.java
+package stat;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.utils.Array;
+import com.mygdx.game.Frustratedbird;
+
+import cpreyt.Fbird;
+import cpreyt.Truba;
+
+public class Play extends State {
+
+    public static final int SPACE = 124;
+    public static final int COUNT = 5;
+
+    private Fbird bird;
+    private Texture background;
+
+    private Array<Truba> trubi;
+
+    public Play(GameStateManager gsm) {
+        super(gsm);
+        bird = new Fbird(50, 300);
+        camera.setToOrtho(false, Frustratedbird.WIDTH/2, Frustratedbird.HEIGHT/2);
+        background = new Texture("background.png");
+
+        trubi = new Array<Truba>();
+
+        for (int i=0; i<COUNT; i++){
+            trubi.add(new Truba(i*(SPACE + Truba.TRUBAWID)));
+        }
+
+
+    }
+    @java.lang.Override
+    protected void handleInput() {
+        if (Gdx.input.justTouched())
+            bird.pryg();
+
+    }
+
+    @java.lang.Override
+    public void update(float dt) {
+        handleInput();
+        bird.update(dt);
+        camera.position.x=bird.getPosit().x+80;
+
+        for (Truba truba: trubi){
+            if (camera.position.x - (camera.viewportWidth/2)>truba.getPosverh().x + truba.getVerh().getWidth()){
+                truba.reposition(truba.getPosverh().x + ((Truba.TRUBAWID+SPACE)*COUNT));
+            }
+
+            if (truba.collides(bird.getBbird()))
+                gsm.set(new Play(gsm));
+        }
+        camera.update();
+
+    }
+
+    @java.lang.Override
+    public void render(SpriteBatch sb) {
+        sb.setProjectionMatrix(camera.combined);
+        sb.begin();
+        sb.draw(background, camera.position.x - (camera.viewportWidth/2),0);
+        sb.draw(bird.getBird(), bird.getPosit().x, bird.getPosit().y);
+        for(Truba truba: trubi) {
+            sb.draw(truba.getVerh(), truba.getPosniz().x, truba.getPosverh().y);
+            sb.draw(truba.getNiz(), truba.getPosniz().x, truba.getPosniz().y);
+        }
+        sb.end();
+
+
+    }
+
+    @java.lang.Override
+    public void dispose() {
+
+
+    }
+}
+
